@@ -13,6 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -28,6 +29,17 @@ public class Home {
 
         dispatcher.register(Commands.literal("home")
                 .executes(Home::executeHome));
+    }
+
+    // Persist home data on player death or return from the End
+    @SubscribeEvent
+    public static void onPlayerClone(PlayerEvent.Clone event) {
+        CompoundTag oldData = event.getOriginal().getPersistentData();
+        
+        if (oldData.contains("ModHome")) {
+            CompoundTag homeData = oldData.getCompound("ModHome").copy();
+            event.getEntity().getPersistentData().put("ModHome", homeData);
+        }
     }
 
     private static int executeSetHome(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
