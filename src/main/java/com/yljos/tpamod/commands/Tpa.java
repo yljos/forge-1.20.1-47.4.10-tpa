@@ -5,6 +5,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,6 +22,15 @@ public class Tpa {
 
         dispatcher.register(Commands.literal("tpa")
                 .then(Commands.argument("target", EntityArgument.player())
+                        // Filter out the sender from suggestions
+                        .suggests((context, builder) -> {
+                            String sourceName = context.getSource().getTextName();
+                            return SharedSuggestionProvider.suggest(
+                                    context.getSource().getOnlinePlayerNames().stream()
+                                            .filter(name -> !name.equals(sourceName)),
+                                    builder
+                            );
+                        })
                         .executes(Tpa::executeTpa)));
     }
 
