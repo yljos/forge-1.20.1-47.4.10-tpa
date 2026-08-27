@@ -1,19 +1,22 @@
 package com.yljos.tpamod;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.api.distmarker.Dist;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
 
 // The value here should match an entry in the META-INF/mods.toml file
@@ -32,35 +35,47 @@ public class TpaMod {
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
-
-        // Register our mod's ForgeConfigSpec
-        context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("HELLO FROM COMMON SETUP");
-
-        if (Config.logDirtBlock) {
-            LOGGER.info("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
-        }
-
-        LOGGER.info(Config.magicNumberIntroduction + Config.magicNumber);
-
-        Config.items.forEach((item) -> LOGGER.info("ITEM >> {}", item.toString()));
     }
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         LOGGER.info("HELLO from server starting");
     }
-
-    // Auto-register static methods for client setup
-    @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-    public static class ClientModEvents {
-        @SubscribeEvent
-        public static void onClientSetup(FMLClientSetupEvent event) {
-            LOGGER.info("HELLO FROM CLIENT SETUP");
-            LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+    
+    @SubscribeEvent
+    public void onLivingAttack(LivingAttackEvent event) {
+        // Check if the entity being attacked is a player
+        if (event.getEntity() instanceof Player target) {
+            // Check if the player has the "dad" tag
+            if (target.getTags().contains("dad")) {
+                Entity attacker = event.getSource().getEntity();
+                
+                if (attacker != null) {
+                    // Ensure we are on the server side
+                    if (attacker.level() instanceof ServerLevel serverLevel) {
+                        BlockPos pos = attacker.blockPosition();
+                        
+                        // Play thunder and impact sounds explicitly
+                        serverLevel.playSound(null, pos, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.WEATHER, 5.0F, 1.0F);
+                        serverLevel.playSound(null, pos, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.WEATHER, 2.0F, 1.0F);
+                        
+                        // Create visual lightning bolt
+                        LightningBolt lightning = EntityType.LIGHTNING_BOLT.create(serverLevel);
+                        if (lightning != null) {
+                            lightning.moveTo(pos.getX(), pos.getY(), pos.getZ());
+                            lightning.setVisualOnly(true);
+                            serverLevel.addFreshEntity(lightning);
+                        }
+                    }
+                    
+                    // Kill the attacker
+                    attacker.kill();
+                }
+            }
         }
     }
 }
