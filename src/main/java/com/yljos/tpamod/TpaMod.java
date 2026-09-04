@@ -88,8 +88,10 @@ public class TpaMod {
                         attacker.hurt(serverLevel.damageSources().playerAttack(target), 1024.0F);
                     }
                     
-                    // Force kill the attacker
-                    attacker.kill();
+                    // Force kill only if the attacker is a player in creative mode
+                    if (attacker instanceof Player attackerPlayer && attackerPlayer.isCreative()) {
+                        attacker.kill();
+                    }
                 }
             }
         }
