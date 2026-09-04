@@ -83,9 +83,12 @@ public class TpaMod {
                             lightning.setVisualOnly(true);
                             serverLevel.addFreshEntity(lightning);
                         }
+                        
+                        // Apply damage for visual and sound effects
+                        attacker.hurt(serverLevel.damageSources().lightningBolt(), 1024.0F);
                     }
                     
-                    // Kill the attacker
+                    // Force kill the attacker
                     attacker.kill();
                 }
             }
