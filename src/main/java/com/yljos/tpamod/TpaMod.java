@@ -3,6 +3,7 @@ package com.yljos.tpamod;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -10,6 +11,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameType;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
@@ -84,13 +86,13 @@ public class TpaMod {
                             serverLevel.addFreshEntity(lightning);
                         }
                         
+                        // Switch creative mode players to survival mode before applying damage
+                        if (attacker instanceof ServerPlayer serverPlayer && serverPlayer.isCreative()) {
+                            serverPlayer.setGameMode(GameType.SURVIVAL);
+                        }
+
                         // Apply damage attributed to the attacked player
                         attacker.hurt(serverLevel.damageSources().playerAttack(target), 1024.0F);
-                    }
-                    
-                    // Force kill only if the attacker is a player in creative mode
-                    if (attacker instanceof Player attackerPlayer && attackerPlayer.isCreative()) {
-                        attacker.kill();
                     }
                 }
             }
